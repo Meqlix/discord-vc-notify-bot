@@ -1,7 +1,23 @@
 import os
+import json
 import discord
 from discord.ext import commands
 from collections import defaultdict
+
+# ===== 保存ファイル =====
+CONFIG_FILE = "channels.json"
+
+def load_channels():
+    if not os.path.exists(CONFIG_FILE):
+        return {}
+    with open(CONFIG_FILE, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+def save_channels(data):
+    with open(CONFIG_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+guild_channels = load_channels()
 
 # ===== Intents =====
 intents = discord.Intents.default()
@@ -11,7 +27,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# ===== 投票状態 =====
+# ===== 投票 =====
 vote_state = defaultdict(set)
 
 CHOICES = [
@@ -27,26 +43,20 @@ def make_embed():
         description="押したボタンの所にメンションで表示されるよ",
         color=0x00ffcc
     )
-
     for choice in CHOICES:
         names = "、".join(vote_state[choice]) if vote_state[choice] else "なし"
         embed.add_field(name=choice, value=names, inline=False)
-
     return embed
 
 
-# ===== 投票ボタン =====
 class VoteView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     async def register(self, interaction: discord.Interaction, choice: str):
-        user = interaction.user.mention  # メンション表示
-
-        # 他の選択肢から削除
+        user = interaction.user.mention
         for v in vote_state.values():
             v.discard(user)
-
         vote_state[choice].add(user)
 
         await interaction.response.edit_message(
@@ -54,7 +64,7 @@ class VoteView(discord.ui.View):
             view=self
         )
 
-    @discord.ui.button(label="① 今すぐ(30分以内)", style=discord.ButtonStyle.green)
+    @discord.ui.button(label="① 今すぐ", style=discord.ButtonStyle.green)
     async def now(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.register(interaction, "今すぐ(30分以内)")
 
@@ -63,7 +73,7 @@ class VoteView(discord.ui.View):
         await self.register(interaction, "1-3時間後")
 
     @discord.ui.button(label="③ 3時間以上後", style=discord.ButtonStyle.gray)
-    async def much_later(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def later_more(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.register(interaction, "3時間以上後")
 
     @discord.ui.button(label="④ 今日は無理", style=discord.ButtonStyle.red)
@@ -71,32 +81,52 @@ class VoteView(discord.ui.View):
         await self.register(interaction, "今日は無理")
 
 
-# ===== 起動確認 =====
+# ===== Slash Commands =====
+@bot.tree.command(name="setchannel", description="このチャンネルを通話通知用に設定")
+@discord.app_commands.checks.has_permissions(manage_guild=True)
+async def setchannel(interaction: discord.Interaction):
+    guild_channels[str(interaction.guild.id)] = interaction.channel.id
+    save_channels(guild_channels)
+    await interaction.response.send_message(
+        "✅ このチャンネルを通話通知用に設定したよ",
+        ephemeral=True
+    )
+
+
+@bot.tree.command(name="clearchannel", description="通話通知チャンネル設定を解除")
+@discord.app_commands.checks.has_permissions(manage_guild=True)
+async def clearchannel(interaction: discord.Interaction):
+    guild_channels.pop(str(interaction.guild.id), None)
+    save_channels(guild_channels)
+    await interaction.response.send_message(
+        "🗑 通話通知チャンネル設定を解除したよ",
+        ephemeral=True
+    )
+
+
+# ===== 起動 =====
 @bot.event
 async def on_ready():
+    await bot.tree.sync()
     print(f"ログイン完了: {bot.user}")
 
 
-# ===== VC入室検知（1人目だけ） =====
+# ===== VC検知（1人目だけ） =====
 @bot.event
 async def on_voice_state_update(member, before, after):
-    # VCが空の状態 → 最初の1人が入った時だけ
     if (
         before.channel is None
         and after.channel is not None
         and len(after.channel.members) == 1
     ):
-        # 送信できる最初のテキストチャンネルを探す
-        channel = None
-        for ch in member.guild.text_channels:
-            if ch.permissions_for(member.guild.me).send_messages:
-                channel = ch
-                break
+        channel_id = guild_channels.get(str(member.guild.id))
+        if channel_id is None:
+            return
 
+        channel = member.guild.get_channel(channel_id)
         if channel is None:
             return
 
-        # 投票リセット
         vote_state.clear()
 
         await channel.send(
@@ -106,5 +136,4 @@ async def on_voice_state_update(member, before, after):
         )
 
 
-# ===== 起動 =====
 bot.run(os.environ["DISCORD_TOKEN"])
