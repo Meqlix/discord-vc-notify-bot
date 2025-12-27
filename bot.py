@@ -10,7 +10,6 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# 投票状態（全VC共通でOK）
 vote_state = defaultdict(set)
 
 CHOICES = [
@@ -23,7 +22,7 @@ CHOICES = [
 def make_embed():
     embed = discord.Embed(
         title="🗳 通話できる？",
-        description="押したボタンの所に名前が表示されるよ",
+        description="押したボタンの所にメンションで表示されるよ",
         color=0x00ffcc
     )
 
@@ -39,7 +38,7 @@ class VoteView(discord.ui.View):
         super().__init__(timeout=None)
 
     async def register(self, interaction: discord.Interaction, choice: str):
-        user = interaction.user.display_name
+        user = interaction.user.mention  # ← ここが重要（青文字）
 
         # 他の選択肢から削除
         for v in vote_state.values():
@@ -76,11 +75,9 @@ async def on_ready():
 
 @bot.event
 async def on_voice_state_update(member, before, after):
-    # VC参加時のみ
     if before.channel is None and after.channel is not None:
         channel = None
 
-        # 通知先テキストチャンネル（最初に見つかったやつ）
         for ch in member.guild.text_channels:
             if ch.permissions_for(member.guild.me).send_messages:
                 channel = ch
@@ -89,14 +86,7 @@ async def on_voice_state_update(member, before, after):
         if channel is None:
             return
 
-        # 投票リセット
         vote_state.clear()
 
         await channel.send(
-            content="@everyone 通話始まったよ！参加できる？",
-            embed=make_embed(),
-            view=VoteView()
-        )
-
-
-bot.run(os.environ["DISCORD_TOKEN"])
+            co
