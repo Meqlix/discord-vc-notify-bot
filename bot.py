@@ -23,8 +23,8 @@ CHOICES = [
 
 def make_embed():
     embed = discord.Embed(
-        title="🗳 通話できる？",
-        description="押したボタンの所にメンションで表示されるよ",
+        title="📞 通話こい！！",
+        description="いつ来れる？",
         color=0x00ffcc
     )
 
@@ -108,3 +108,4 @@ async def on_voice_state_update(member, before, after):
 
 # ===== 起動 =====
 bot.run(os.environ["DISCORD_TOKEN"])
+
