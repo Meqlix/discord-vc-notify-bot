@@ -100,7 +100,7 @@ async def on_voice_state_update(member, before, after):
         vote_state.clear()
 
         await channel.send(
-            content="@everyone 通話始まったよ！参加できる？",
+            content="@everyone",
             embed=make_embed(),
             view=VoteView()
         )
@@ -108,4 +108,5 @@ async def on_voice_state_update(member, before, after):
 
 # ===== 起動 =====
 bot.run(os.environ["DISCORD_TOKEN"])
+
 
