@@ -3,6 +3,7 @@ import discord
 from discord.ext import commands
 from collections import defaultdict
 
+# ===== Intents =====
 intents = discord.Intents.default()
 intents.voice_states = True
 intents.guilds = True
@@ -10,6 +11,7 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# ===== 投票状態 =====
 vote_state = defaultdict(set)
 
 CHOICES = [
@@ -33,12 +35,13 @@ def make_embed():
     return embed
 
 
+# ===== 投票ボタン =====
 class VoteView(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
 
     async def register(self, interaction: discord.Interaction, choice: str):
-        user = interaction.user.mention  # ← ここが重要（青文字）
+        user = interaction.user.mention  # メンション表示
 
         # 他の選択肢から削除
         for v in vote_state.values():
@@ -68,16 +71,23 @@ class VoteView(discord.ui.View):
         await self.register(interaction, "今日は無理")
 
 
+# ===== 起動確認 =====
 @bot.event
 async def on_ready():
     print(f"ログイン完了: {bot.user}")
 
 
+# ===== VC入室検知（1人目だけ） =====
 @bot.event
 async def on_voice_state_update(member, before, after):
-    if before.channel is None and after.channel is not None:
+    # VCが空の状態 → 最初の1人が入った時だけ
+    if (
+        before.channel is None
+        and after.channel is not None
+        and len(after.channel.members) == 1
+    ):
+        # 送信できる最初のテキストチャンネルを探す
         channel = None
-
         for ch in member.guild.text_channels:
             if ch.permissions_for(member.guild.me).send_messages:
                 channel = ch
@@ -86,6 +96,7 @@ async def on_voice_state_update(member, before, after):
         if channel is None:
             return
 
+        # 投票リセット
         vote_state.clear()
 
         await channel.send(
@@ -95,4 +106,5 @@ async def on_voice_state_update(member, before, after):
         )
 
 
+# ===== 起動 =====
 bot.run(os.environ["DISCORD_TOKEN"])
