@@ -15,10 +15,10 @@ bot = commands.Bot(command_prefix="!", intents=intents)
 vote_state = defaultdict(set)
 
 CHOICES = [
-    "今すぐ(30分以内)",
+    "今すぐ(15分以内)",
+    "15分-1時間後",
     "1-3時間後",
-    "3時間以上後",
-    "今日は無理"
+    "3時間以上後"
 ]
 
 def make_embed():
@@ -54,21 +54,21 @@ class VoteView(discord.ui.View):
             view=self
         )
 
-    @discord.ui.button(label="① 今すぐ(30分以内)", style=discord.ButtonStyle.green)
+    @discord.ui.button(label="① 今すぐ(15分以内))", style=discord.ButtonStyle.green)
     async def now(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.register(interaction, "今すぐ(30分以内)")
+        await self.register(interaction, "今すぐ(15分以内)")
 
     @discord.ui.button(label="② 15分-1時間後", style=discord.ButtonStyle.blurple)
     async def later(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.register(interaction, "15分-1時間後")
 
-    @discord.ui.button(label="③ 1-3時間以上後", style=discord.ButtonStyle.gray)
+    @discord.ui.button(label="③ 1-3時間後", style=discord.ButtonStyle.gray)
     async def much_later(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.register(interaction, "1-3時間以上後")
+        await self.register(interaction, "1-3時間後")
 
     @discord.ui.button(label="④ 3時間以上後", style=discord.ButtonStyle.red)
     async def no(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.register(interaction, "3時間後")
+        await self.register(interaction, "3時間以上後")
 
 
 # ===== 起動確認 =====
@@ -108,6 +108,3 @@ async def on_voice_state_update(member, before, after):
 
 # ===== 起動 =====
 bot.run(os.environ["DISCORD_TOKEN"])
-
-
-
