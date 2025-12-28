@@ -58,17 +58,17 @@ class VoteView(discord.ui.View):
     async def now(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.register(interaction, "今すぐ(30分以内)")
 
-    @discord.ui.button(label="② 1-3時間後", style=discord.ButtonStyle.blurple)
+    @discord.ui.button(label="② 15分-1時間後", style=discord.ButtonStyle.blurple)
     async def later(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.register(interaction, "1-3時間後")
+        await self.register(interaction, "15分-1時間後")
 
-    @discord.ui.button(label="③ 3時間以上後", style=discord.ButtonStyle.gray)
+    @discord.ui.button(label="③ 1-3時間以上後", style=discord.ButtonStyle.gray)
     async def much_later(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.register(interaction, "3時間以上後")
+        await self.register(interaction, "1-3時間以上後")
 
-    @discord.ui.button(label="④ 今日は無理", style=discord.ButtonStyle.red)
+    @discord.ui.button(label="④ 3時間以上後", style=discord.ButtonStyle.red)
     async def no(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self.register(interaction, "今日は無理")
+        await self.register(interaction, "3時間後")
 
 
 # ===== 起動確認 =====
@@ -108,5 +108,6 @@ async def on_voice_state_update(member, before, after):
 
 # ===== 起動 =====
 bot.run(os.environ["DISCORD_TOKEN"])
+
 
 
