@@ -54,7 +54,7 @@ class VoteView(discord.ui.View):
             view=self
         )
 
-    @discord.ui.button(label="① 今すぐ(15分以内))", style=discord.ButtonStyle.green)
+    @discord.ui.button(label="① 今すぐ(15分以内)", style=discord.ButtonStyle.green)
     async def now(self, interaction: discord.Interaction, button: discord.ui.Button):
         await self.register(interaction, "今すぐ(15分以内)")
 
