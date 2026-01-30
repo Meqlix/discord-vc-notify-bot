@@ -2,6 +2,24 @@ import os
 import discord
 from discord.ext import commands
 from collections import defaultdict
+from flask import Flask
+from threading import Thread
+
+# ===== keep_alive（Renderスリープ防止）=====
+app = Flask(__name__)
+
+@app.route("/")
+def home():
+    return "ok"
+
+def run_web():
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
+
+def keep_alive():
+    t = Thread(target=run_web)
+    t.start()
+
 
 # ===== Intents =====
 intents = discord.Intents.default()
@@ -41,9 +59,8 @@ class VoteView(discord.ui.View):
         super().__init__(timeout=None)
 
     async def register(self, interaction: discord.Interaction, choice: str):
-        user = interaction.user.mention  # メンション表示
+        user = interaction.user.mention
 
-        # 他の選択肢から削除
         for v in vote_state.values():
             v.discard(user)
 
@@ -77,16 +94,14 @@ async def on_ready():
     print(f"ログイン完了: {bot.user}")
 
 
-# ===== VC入室検知（1人目だけ） =====
+# ===== VC入室検知（最初の1人だけ）=====
 @bot.event
 async def on_voice_state_update(member, before, after):
-    # VCが空の状態 → 最初の1人が入った時だけ
     if (
         before.channel is None
         and after.channel is not None
         and len(after.channel.members) == 1
     ):
-        # 送信できる最初のテキストチャンネルを探す
         channel = None
         for ch in member.guild.text_channels:
             if ch.permissions_for(member.guild.me).send_messages:
@@ -96,7 +111,6 @@ async def on_voice_state_update(member, before, after):
         if channel is None:
             return
 
-        # 投票リセット
         vote_state.clear()
 
         await channel.send(
@@ -107,4 +121,5 @@ async def on_voice_state_update(member, before, after):
 
 
 # ===== 起動 =====
+keep_alive()
 bot.run(os.environ["DISCORD_TOKEN"])
